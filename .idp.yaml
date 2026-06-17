@@ -1,0 +1,55 @@
+kind: blueprint
+name: "ECS Fargate (Terraform)"
+description: "ECS Fargate service with ALB, auto-scaling, CloudWatch logs. Uses public terraform-aws-modules/ecs. Triggered via GitHub Actions workflow_dispatch."
+category: compute
+icon: bi-cpu
+
+deploy:
+  type: terraform
+  path: ./
+  pipeline: github-actions
+  entry: deploy.yml
+  branch: main
+  variables:
+    TF_WORKSPACE: "{environment}"
+
+parameters:
+  - name: service_name
+    label: Service Name
+    type: string
+    required: true
+  - name: environment
+    label: Environment
+    type: select
+    required: true
+    options: [{ value: dev, label: Dev }, { value: prod, label: Prod }]
+    default: dev
+  - name: cpu
+    label: CPU Units
+    type: select
+    options: [256, 512, 1024, 2048]
+    default: 256
+  - name: memory
+    label: Memory (MB)
+    type: select
+    options: [512, 1024, 2048]
+    default: 512
+  - name: desired_count
+    label: Desired Tasks
+    type: number
+    default: 1
+  - name: container_port
+    label: Container Port
+    type: number
+    default: 3000
+
+requires:
+  - kind: secret
+    name: AWS_ACCESS_KEY_ID
+    description: AWS credentials in GitHub secrets
+  - kind: secret
+    name: AWS_SECRET_ACCESS_KEY
+    description: AWS credentials in GitHub secrets
+  - kind: secret
+    name: TF_BACKEND_BUCKET
+    description: S3 bucket name for Terraform state
