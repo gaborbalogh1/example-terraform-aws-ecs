@@ -1,0 +1,20 @@
+name: Deploy ECS
+on:
+  workflow_dispatch:
+    inputs:
+      environment: { type: choice, options: [dev, prod], default: dev }
+      service_name: { type: string, required: true }
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init -backend-config="bucket=${{ secrets.TF_BACKEND_BUCKET }}"
+      - run: terraform workspace select -or-create ${{ inputs.environment }}
+      - run: terraform apply -auto-approve -var="service_name=${{ inputs.service_name }}" -var="environment=${{ inputs.environment }}" -var="tf_backend_bucket=${{ secrets.TF_BACKEND_BUCKET }}"
